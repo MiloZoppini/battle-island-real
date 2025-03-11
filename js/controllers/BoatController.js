@@ -19,8 +19,8 @@ export class BoatController {
         console.log('Personaggio Minecraft creato e aggiunto alla scena');
         
         // Configurazione della telecamera
-        this.cameraOffset = new THREE.Vector3(0, 4, -15); // Aumentato l'offset verticale e la distanza per una visuale più chiaramente da dietro
-        this.cameraLookOffset = new THREE.Vector3(0, 0, 20); // Modificato per guardare più avanti
+        this.cameraOffset = new THREE.Vector3(0, 3, -10);
+        this.cameraLookOffset = new THREE.Vector3(0, 2, 0);
         
         // Configurazione del movimento della barca
         this.boatSpeed = 0.3; // Velocità di movimento della barca
@@ -263,20 +263,22 @@ export class BoatController {
     }
     
     updateCameraPosition() {
-        // Calcola la posizione della camera in base alla barca
-        const cameraTarget = new THREE.Vector3();
-        cameraTarget.copy(this.boat.position).add(this.cameraOffset);
-        
-        // Aggiungi movimento ondulatorio alla camera
+        // Calcola l'offset ruotato in base all'orientamento della barca
+        const offset = this.cameraOffset.clone();
+        offset.applyQuaternion(this.boat.quaternion);
+
+        // Posizione target della telecamera dietro la barca
+        const cameraTarget = new THREE.Vector3().copy(this.boat.position).add(offset);
+
+        // Aggiungi movimento ondulatorio
         const waveOffset = Math.sin(this.journeyTime * 0.002 * this.waveFrequency) * this.wavesIntensity;
         cameraTarget.y += waveOffset;
-        
-        // Interpola la posizione della camera
+
+        // Interpola la posizione della telecamera per un movimento fluido
         this.camera.position.lerp(cameraTarget, 0.1);
-        
-        // Fai guardare la camera verso la barca
-        const lookTarget = new THREE.Vector3();
-        lookTarget.copy(this.boat.position).add(this.cameraLookOffset);
+
+        // La telecamera guarda verso la barca con un offset verticale fisso
+        const lookTarget = new THREE.Vector3().copy(this.boat.position).add(this.cameraLookOffset);
         this.camera.lookAt(lookTarget);
     }
     
