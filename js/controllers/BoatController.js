@@ -19,8 +19,8 @@ export class BoatController {
         console.log('Personaggio Minecraft creato e aggiunto alla scena');
         
         // Configurazione della telecamera
-        this.cameraOffset = new THREE.Vector3(0, 2, -8); // Ridotto da 4 a 2 per adattarsi alla nuova altezza della barca
-        this.cameraLookOffset = new THREE.Vector3(0, 1, 4); // Ridotto da 2 a 1 per adattarsi alla nuova altezza della barca
+        this.cameraOffset = new THREE.Vector3(0, 3, -10); // Modificato per avere una visuale da dietro
+        this.cameraLookOffset = new THREE.Vector3(0, 1, 10); // Modificato per guardare in avanti
         
         // Configurazione del movimento della barca
         this.boatSpeed = 0.3; // Velocità di movimento della barca
