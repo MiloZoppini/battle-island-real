@@ -94,7 +94,7 @@ function init() {
     
     // Inizializza i controller delle barche
     boats.forEach((boatInfo, index) => {
-        const boatController = new BoatController(boatInfo.boat, camera, scene, controls);
+        const boatController = new BoatController(boatInfo.boat, camera, scene, controls, islands);
         boatControllers.push(boatController);
         console.log(`Controller della barca ${index} inizializzato`);
     });

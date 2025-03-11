@@ -2,11 +2,12 @@ import * as THREE from 'three';
 import { MinecraftCharacter } from '../entities/MinecraftCharacter.js';
 
 export class BoatController {
-    constructor(boat, camera, scene, controls) {
+    constructor(boat, camera, scene, controls, islands = []) {
         this.boat = boat;
         this.camera = camera;
         this.scene = scene;
         this.controls = controls;
+        this.islands = islands;
         this.isPlayerInBoat = false;
         this.raycaster = new THREE.Raycaster();
         this.interactionDistance = 10; // Aumentato per facilitare l'interazione
@@ -22,12 +23,14 @@ export class BoatController {
         this.cameraOffset = new THREE.Vector3(0, 2, -8); // Ridotto da 4 a 2 per adattarsi alla nuova altezza della barca
         this.cameraLookOffset = new THREE.Vector3(0, 1, 4); // Ridotto da 2 a 1 per adattarsi alla nuova altezza della barca
         
-        // Configurazione del viaggio
-        this.journeyStarted = false;
-        this.journeyTime = 0;
-        this.journeyDuration = 20000; // 20 secondi di viaggio
-        this.startPosition = new THREE.Vector3(32, 0, 0); // Posizione iniziale della barca
-        this.endPosition = new THREE.Vector3(200, 0, 0); // Posizione finale della barca
+        // Configurazione del movimento della barca
+        this.boatSpeed = 0.3;
+        this.boatRotationSpeed = 0.03;
+        this.moveForward = false;
+        this.moveBackward = false;
+        this.moveLeft = false;
+        this.moveRight = false;
+        this.boatDirection = new THREE.Vector3(0, 0, 1);
         this.wavesIntensity = 0.2;
         this.waveFrequency = 2;
         
@@ -58,10 +61,13 @@ export class BoatController {
         this.update = this.update.bind(this);
         this.checkBoatProximity = this.checkBoatProximity.bind(this);
         this.onKeyDown = this.onKeyDown.bind(this);
+        this.onKeyUp = this.onKeyUp.bind(this);
+        this.checkIslandCollision = this.checkIslandCollision.bind(this);
         
         // Event listeners
         document.addEventListener('click', this.onClick);
         document.addEventListener('keydown', this.onKeyDown);
+        document.addEventListener('keyup', this.onKeyUp);
         
         // Messaggio di debug
         console.log('BoatController inizializzato, barca posizionata a:', this.boat.position);
@@ -97,70 +103,79 @@ export class BoatController {
     }
     
     checkBoatProximity() {
-        if (this.journeyStarted || !this.controls.isLocked) return;
+        if (this.isPlayerInBoat || !this.controls.isLocked) return;
         
         // Calcola la distanza tra il giocatore e la barca
         const distance = this.camera.position.distanceTo(this.boat.position);
         
         if (distance <= this.interactionDistance) {
-            this.showMessage("Clicca per salire sulla barca");
+            this.showMessage("Premi E per salire sulla barca");
         } else {
             this.hideMessage();
         }
     }
     
     onClick() {
-        if (this.isTransitioning || !this.controls.isLocked || this.journeyStarted) {
-            console.log('Click ignorato: transizione in corso o controlli non bloccati');
-            return;
-        }
-        
-        console.log('Click rilevato, verifico intersezione con la barca');
-        
-        // Usa la direzione della camera per il raycasting
-        this.raycaster.setFromCamera(new THREE.Vector2(0, 0), this.camera);
-        
-        // Verifica l'intersezione con la barca e tutti i suoi figli
-        const intersects = this.raycaster.intersectObject(this.boat, true);
-        
-        if (intersects.length > 0) {
-            const distance = intersects[0].distance;
-            console.log('Intersezione con la barca rilevata, distanza:', distance);
-            
-            if (distance <= this.interactionDistance) {
-                console.log('Distanza valida, avvio il viaggio');
-                this.startJourney();
-            } else {
-                console.log('Troppo lontano dalla barca:', distance);
-            }
-        } else {
-            // Verifica se siamo comunque vicini alla barca
-            const distanceToBoat = this.camera.position.distanceTo(this.boat.position);
-            console.log('Nessuna intersezione diretta, distanza dalla barca:', distanceToBoat);
-            
-            if (distanceToBoat <= this.interactionDistance) {
-                console.log('Abbastanza vicino alla barca, avvio il viaggio');
-                this.startJourney();
-            }
-        }
+        // Non usiamo più il click per salire sulla barca
     }
     
     onKeyDown(event) {
-        // Se il giocatore preme E, scende dalla barca
-        if (this.isPlayerInBoat && event.code === 'KeyE') {
+        if (!this.controls.isLocked) return;
+        
+        // Se il giocatore è vicino alla barca e preme E, sale sulla barca
+        if (!this.isPlayerInBoat && event.code === 'KeyE') {
+            const distance = this.camera.position.distanceTo(this.boat.position);
+            if (distance <= this.interactionDistance) {
+                this.boardBoat();
+            }
+        }
+        // Se il giocatore è sulla barca e preme E, scende dalla barca
+        else if (this.isPlayerInBoat && event.code === 'KeyE') {
             this.exitBoat();
+        }
+        
+        // Controlli di movimento della barca
+        if (this.isPlayerInBoat) {
+            switch (event.code) {
+                case 'KeyW':
+                    this.moveForward = true;
+                    break;
+                case 'KeyS':
+                    this.moveBackward = true;
+                    break;
+                case 'KeyA':
+                    this.moveLeft = true;
+                    break;
+                case 'KeyD':
+                    this.moveRight = true;
+                    break;
+            }
         }
     }
     
-    startJourney() {
+    onKeyUp(event) {
+        // Ferma il movimento quando i tasti vengono rilasciati
+        if (this.isPlayerInBoat) {
+            switch (event.code) {
+                case 'KeyW':
+                    this.moveForward = false;
+                    break;
+                case 'KeyS':
+                    this.moveBackward = false;
+                    break;
+                case 'KeyA':
+                    this.moveLeft = false;
+                    break;
+                case 'KeyD':
+                    this.moveRight = false;
+                    break;
+            }
+        }
+    }
+    
+    boardBoat() {
         this.isPlayerInBoat = true;
-        this.journeyStarted = true;
-        this.journeyTime = 0;
         this.controls.enabled = false;
-        
-        // Salva la posizione iniziale
-        this.initialCameraPosition = this.camera.position.clone();
-        this.initialBoatPosition = this.boat.position.clone();
         
         // Mostra il personaggio Minecraft
         this.character.show();
@@ -177,12 +192,11 @@ export class BoatController {
         // Nascondi il messaggio di interazione
         this.hideMessage();
         
-        console.log('Viaggio iniziato!');
+        console.log('Giocatore salito sulla barca!');
     }
     
     exitBoat() {
         this.isPlayerInBoat = false;
-        this.journeyStarted = false;
         this.controls.enabled = true;
         
         // Nascondi il personaggio Minecraft
@@ -213,7 +227,8 @@ export class BoatController {
         cameraTarget.copy(this.boat.position).add(this.cameraOffset);
         
         // Aggiungi movimento ondulatorio alla camera
-        const waveOffset = Math.sin(this.journeyTime * 0.002 * this.waveFrequency) * this.wavesIntensity;
+        const time = Date.now();
+        const waveOffset = Math.sin(time * 0.002 * this.waveFrequency) * this.wavesIntensity;
         cameraTarget.y += waveOffset;
         
         // Interpola la posizione della camera
@@ -225,48 +240,78 @@ export class BoatController {
         this.camera.lookAt(lookTarget);
     }
     
+    checkIslandCollision() {
+        if (!this.islands || this.islands.length === 0) return false;
+        
+        // Verifica la collisione con le isole
+        for (const island of this.islands) {
+            if (island.group && island.position) {
+                const distance = this.boat.position.distanceTo(island.position);
+                const collisionThreshold = 35; // Raggio dell'isola + margine
+                
+                if (distance < collisionThreshold) {
+                    console.log('Barca arrivata all\'isola!');
+                    return true;
+                }
+            }
+        }
+        
+        return false;
+    }
+    
     update() {
-        if (!this.journeyStarted) return;
+        if (!this.isPlayerInBoat) return;
         
-        this.journeyTime += 16.67; // Circa 60 FPS
-        const progress = Math.min(this.journeyTime / this.journeyDuration, 1);
-        
-        // Movimento della barca
-        const newPosition = new THREE.Vector3();
-        newPosition.lerpVectors(this.startPosition, this.endPosition, progress);
-        
-        // Aggiungi movimento ondulatorio
-        const waveOffset = Math.sin(this.journeyTime * 0.002 * this.waveFrequency) * this.wavesIntensity;
-        newPosition.y = 0 + waveOffset;
-        
-        // Aggiorna la posizione della barca
-        this.boat.position.copy(newPosition);
+        // Movimento ondulatorio della barca
+        const time = Date.now();
+        const waveOffset = Math.sin(time * 0.002 * this.waveFrequency) * this.wavesIntensity;
+        this.boat.position.y = 0 + waveOffset;
         
         // Rotazione naturale della barca
         this.boat.rotation.x = waveOffset * 0.2;
-        this.boat.rotation.z = Math.sin(this.journeyTime * 0.001) * 0.1;
+        this.boat.rotation.z = Math.sin(time * 0.001) * 0.1;
         
-        // Fai guardare la barca nella direzione del movimento
-        this.boat.rotation.y = Math.atan2(
-            this.endPosition.x - this.startPosition.x,
-            this.endPosition.z - this.startPosition.z
-        );
+        // Movimento della barca in base ai tasti premuti
+        if (this.moveForward || this.moveBackward || this.moveLeft || this.moveRight) {
+            // Calcola la direzione di movimento
+            if (this.moveLeft) {
+                this.boat.rotation.y += this.boatRotationSpeed;
+            }
+            if (this.moveRight) {
+                this.boat.rotation.y -= this.boatRotationSpeed;
+            }
+            
+            // Aggiorna la direzione della barca
+            this.boatDirection.set(0, 0, 1).applyAxisAngle(new THREE.Vector3(0, 1, 0), this.boat.rotation.y);
+            
+            // Muovi la barca avanti o indietro
+            if (this.moveForward) {
+                this.boat.position.x += this.boatDirection.x * this.boatSpeed;
+                this.boat.position.z += this.boatDirection.z * this.boatSpeed;
+            }
+            if (this.moveBackward) {
+                this.boat.position.x -= this.boatDirection.x * this.boatSpeed * 0.5; // Più lento all'indietro
+                this.boat.position.z -= this.boatDirection.z * this.boatSpeed * 0.5;
+            }
+            
+            // Verifica collisione con le isole
+            if (this.checkIslandCollision()) {
+                this.exitBoat();
+                return;
+            }
+        }
         
         // Aggiorna la posizione della camera
         this.updateCameraPosition();
         
         // Aggiorna il personaggio Minecraft
-        this.character.update(this.boat, this.journeyTime);
-        
-        // Controlla se il viaggio è completato
-        if (progress >= 1) {
-            this.exitBoat();
-        }
+        this.character.update(this.boat, time);
     }
     
     dispose() {
         document.removeEventListener('click', this.onClick);
         document.removeEventListener('keydown', this.onKeyDown);
+        document.removeEventListener('keyup', this.onKeyUp);
         if (this.waveSound) {
             this.waveSound.stop();
         }
