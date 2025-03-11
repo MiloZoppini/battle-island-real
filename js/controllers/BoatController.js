@@ -2,16 +2,19 @@ import * as THREE from 'three';
 import { MinecraftCharacter } from '../entities/MinecraftCharacter.js';
 
 export class BoatController {
-    constructor(boat, camera, scene, controls) {
+    constructor(boat, camera, scene, controls, islands = []) {
         this.boat = boat;
         this.camera = camera;
         this.scene = scene;
         this.controls = controls;
+        this.islands = islands; // Aggiungo riferimento alle isole
         this.isPlayerInBoat = false;
         this.raycaster = new THREE.Raycaster();
         this.interactionDistance = 10; // Aumentato per facilitare l'interazione
         this.transitionDuration = 1000;
         this.isTransitioning = false;
+        this.islandCollisionDistance = 35; // Distanza per rilevare la collisione con un'isola
+        this.currentIsland = null; // Isola su cui si trova attualmente il giocatore
         
         // Crea il personaggio Minecraft
         this.character = new MinecraftCharacter();
@@ -61,6 +64,7 @@ export class BoatController {
         this.checkBoatProximity = this.checkBoatProximity.bind(this);
         this.onKeyDown = this.onKeyDown.bind(this);
         this.onKeyUp = this.onKeyUp.bind(this);
+        this.checkIslandCollision = this.checkIslandCollision.bind(this);
         
         // Event listeners
         document.addEventListener('click', this.onClick);
@@ -282,6 +286,75 @@ export class BoatController {
         this.camera.lookAt(lookTarget);
     }
     
+    // Verifica se la barca è in collisione con un'isola
+    checkIslandCollision() {
+        if (!this.isPlayerInBoat || !this.islands || this.islands.length === 0) return false;
+        
+        let collidedIsland = null;
+        let minDistance = Infinity;
+        
+        // Controlla la distanza da ogni isola
+        for (const island of this.islands) {
+            if (!island || !island.position) continue;
+            
+            const distance = this.boat.position.distanceTo(island.position);
+            
+            // Se la barca è abbastanza vicina all'isola e questa è l'isola più vicina finora
+            if (distance < this.islandCollisionDistance && distance < minDistance) {
+                minDistance = distance;
+                collidedIsland = island;
+            }
+        }
+        
+        // Se abbiamo trovato un'isola in collisione
+        if (collidedIsland) {
+            console.log(`Barca in collisione con l'isola della squadra ${collidedIsland.teamIndex}`);
+            this.currentIsland = collidedIsland;
+            this.exitBoatOnIsland(collidedIsland);
+            return true;
+        }
+        
+        return false;
+    }
+    
+    // Fa scendere il giocatore dalla barca sull'isola
+    exitBoatOnIsland(island) {
+        this.isPlayerInBoat = false;
+        this.controls.enabled = true;
+        
+        // Nascondi il personaggio Minecraft
+        this.character.hide();
+        
+        // Ferma il suono delle onde
+        if (this.waveSound) {
+            this.waveSound.stop();
+        }
+        
+        // Calcola la posizione di sbarco sull'isola
+        const landingPosition = new THREE.Vector3();
+        
+        // Calcola la direzione dalla barca verso il centro dell'isola
+        const directionToIsland = new THREE.Vector3().subVectors(island.position, this.boat.position).normalize();
+        
+        // Posiziona il giocatore sul bordo dell'isola nella direzione della barca
+        landingPosition.copy(island.position).sub(directionToIsland.multiplyScalar(25)); // 25 è un po' meno del raggio dell'isola
+        landingPosition.y = 5; // Altezza del giocatore sull'isola
+        
+        // Posiziona la camera
+        this.camera.position.copy(landingPosition);
+        
+        // Fai guardare la camera verso il centro dell'isola
+        this.camera.lookAt(island.position);
+        
+        // Mostra un messaggio
+        this.showMessage(`Sei sbarcato sull'isola della squadra ${island.teamIndex + 1}`);
+        setTimeout(() => {
+            this.hideMessage();
+        }, 5000);
+        
+        console.log(`Giocatore sbarcato sull'isola della squadra ${island.teamIndex}`);
+    }
+    
     update() {
         if (!this.isPlayerInBoat) return;
         
@@ -329,6 +402,9 @@ export class BoatController {
         // Rotazione naturale della barca (ondeggiamento)
         this.boat.rotation.x = waveOffset * 0.2;
         this.boat.rotation.z = Math.sin(this.journeyTime * 0.001) * 0.1;
+        
+        // Verifica collisione con le isole
+        this.checkIslandCollision();
         
         // Aggiorna la posizione della camera
         this.updateCameraPosition();
