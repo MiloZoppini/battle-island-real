@@ -98,7 +98,7 @@ export class MinecraftCharacter {
     positionOnBoat(boat) {
         this.model.position.copy(boat.position);
         // Posiziona il personaggio più in alto sulla barca per evitare che venga tagliato
-        this.model.position.y += 2.5; // Aumentato da 1.5 a 2.5
+        this.model.position.y += 1.0; // Ridotto da 2.5 a 1.0 per adattarsi alla nuova altezza della barca
         this.model.position.z += 0.5;
         // Ruota il personaggio per guardare avanti
         this.model.rotation.y = boat.rotation.y;

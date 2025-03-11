@@ -19,8 +19,8 @@ export class BoatController {
         console.log('Personaggio Minecraft creato e aggiunto alla scena');
         
         // Configurazione della telecamera
-        this.cameraOffset = new THREE.Vector3(0, 4, -8); // Posizione della camera in terza persona
-        this.cameraLookOffset = new THREE.Vector3(0, 2, 4); // Punto dove guarda la camera
+        this.cameraOffset = new THREE.Vector3(0, 2, -8); // Ridotto da 4 a 2 per adattarsi alla nuova altezza della barca
+        this.cameraLookOffset = new THREE.Vector3(0, 1, 4); // Ridotto da 2 a 1 per adattarsi alla nuova altezza della barca
         
         // Configurazione del viaggio
         this.journeyStarted = false;
@@ -196,7 +196,7 @@ export class BoatController {
         // Posiziona il giocatore vicino alla barca
         const exitPosition = new THREE.Vector3();
         exitPosition.copy(this.boat.position);
-        exitPosition.y = 7; // Altezza del giocatore
+        exitPosition.y = 5; // Ridotto da 7 a 5 per adattarsi alla nuova altezza della barca
         exitPosition.z += 5; // Leggermente dietro la barca
         
         this.camera.position.copy(exitPosition);
