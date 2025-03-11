@@ -332,21 +332,23 @@ export class BoatController {
         this.boat.rotation.x = waveOffset * 0.2;
         this.boat.rotation.z = Math.sin(this.journeyTime * 0.001) * 0.1;
         
-        // Verifica se la barca tocca una delle isole
-        const boatBox = new THREE.Box3().setFromObject(this.boat);
-        const island1Box = new THREE.Box3().setFromObject(this.island1);
-        const island2Box = new THREE.Box3().setFromObject(this.island2);
+        if (this.isPlayerInBoat) {
+            // Verifica se la barca tocca una delle isole
+            const boatBox = new THREE.Box3().setFromObject(this.boat);
+            const island1Box = new THREE.Box3().setFromObject(this.island1);
+            const island2Box = new THREE.Box3().setFromObject(this.island2);
 
-        if (boatBox.intersectsBox(island1Box)) {
-            console.log("La barca ha raggiunto l'isola 1");
-            this.exitBoat();
-            // Posiziona il personaggio sull'isola 1 (aggiusta l'offset se necessario)
-            this.character.model.position.copy(this.island1.position);
-        } else if (boatBox.intersectsBox(island2Box)) {
-            console.log("La barca ha raggiunto l'isola 2");
-            this.exitBoat();
-            // Posiziona il personaggio sull'isola 2
-            this.character.model.position.copy(this.island2.position);
+            if (boatBox.intersectsBox(island1Box)) {
+                console.log("La barca ha raggiunto l'isola 1");
+                this.exitBoat();
+                // Posiziona il personaggio sull'isola 1 (aggiusta l'offset se necessario)
+                this.character.model.position.copy(this.island1.position);
+            } else if (boatBox.intersectsBox(island2Box)) {
+                console.log("La barca ha raggiunto l'isola 2");
+                this.exitBoat();
+                // Posiziona il personaggio sull'isola 2
+                this.character.model.position.copy(this.island2.position);
+            }
         }
         
         // Aggiorna la posizione della camera
