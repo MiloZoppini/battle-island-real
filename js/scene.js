@@ -174,13 +174,22 @@ export function createBoatsForIslands(scene, islands) {
         
         // Calcola la posizione della barca vicino all'isola
         const islandPosition = island.position;
+        
+        // Calcola una direzione casuale per posizionare la barca (ma mantieni una distanza maggiore)
+        const angle = Math.random() * Math.PI * 2;
+        const distanceFromIsland = 50; // Aumentato da 32 a 50 per distanziare meglio le barche dalle isole
+        
         const boatPosition = new THREE.Vector3(
-            islandPosition.x + 32,
+            islandPosition.x + Math.cos(angle) * distanceFromIsland,
             0,
-            islandPosition.z
+            islandPosition.z + Math.sin(angle) * distanceFromIsland
         );
         
         boat.position.copy(boatPosition);
+        
+        // Orienta la barca verso l'isola
+        boat.lookAt(islandPosition);
+        
         scene.add(boat);
         
         boats.push({
