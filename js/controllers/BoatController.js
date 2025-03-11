@@ -26,8 +26,8 @@ export class BoatController {
         this.journeyStarted = false;
         this.journeyTime = 0;
         this.journeyDuration = 20000; // 20 secondi di viaggio
-        this.startPosition = new THREE.Vector3(32, 0.2, 0); // Posizione iniziale della barca
-        this.endPosition = new THREE.Vector3(200, 0.2, 0); // Posizione finale della barca
+        this.startPosition = new THREE.Vector3(32, 1.5, 0); // Posizione iniziale della barca
+        this.endPosition = new THREE.Vector3(200, 1.5, 0); // Posizione finale della barca
         this.wavesIntensity = 0.2;
         this.waveFrequency = 2;
         
@@ -237,7 +237,7 @@ export class BoatController {
         
         // Aggiungi movimento ondulatorio
         const waveOffset = Math.sin(this.journeyTime * 0.002 * this.waveFrequency) * this.wavesIntensity;
-        newPosition.y = 0.2 + waveOffset;
+        newPosition.y = 1.5 + waveOffset;
         
         // Aggiorna la posizione della barca
         this.boat.position.copy(newPosition);

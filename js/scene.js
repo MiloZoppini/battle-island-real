@@ -67,7 +67,7 @@ export function initScene(scene, playerCount = 6) {
     const boat = createBoat();
     
     // Posiziona la barca nell'acqua vicino alla prima isola
-    boat.position.set(32, 0.2, 0);
+    boat.position.set(32, 1.5, 0);
     scene.add(boat);
     console.log('Barca aggiunta alla scena con i remi');
     
@@ -176,7 +176,7 @@ export function createBoatsForIslands(scene, islands) {
         const islandPosition = island.position;
         const boatPosition = new THREE.Vector3(
             islandPosition.x + 32,
-            0.2,
+            1.5,
             islandPosition.z
         );
         
