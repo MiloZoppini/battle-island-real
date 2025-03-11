@@ -94,13 +94,14 @@ function init() {
     
     // Inizializza i controller delle barche
     boats.forEach((boatInfo, index) => {
-        // Usa l'isola corrente come island1 e la prossima isola come island2 (o la prima se è l'ultima)
+        // Ottieni le isole per questo controller
+        // Usa l'isola corrente come island1 e la successiva come island2 (o la prima se è l'ultima)
         const island1 = islands[index].group;
         const island2 = islands[(index + 1) % islands.length].group;
         
         const boatController = new BoatController(boatInfo.boat, camera, scene, controls, island1, island2);
         boatControllers.push(boatController);
-        console.log(`Controller della barca ${index} inizializzato con isola1: ${index} e isola2: ${(index + 1) % islands.length}`);
+        console.log(`Controller della barca ${index} inizializzato con isole ${index} e ${(index + 1) % islands.length}`);
     });
     
     // Gestisci il ridimensionamento della finestra
