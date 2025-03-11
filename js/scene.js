@@ -2,12 +2,14 @@ import * as THREE from 'three';
 import { Water } from 'three/examples/jsm/objects/Water.js';
 import { CloudGenerator } from './CloudGenerator.js';
 import { SkyShader } from './shaders/SkyShader.js';
+import { IslandGenerator } from './IslandGenerator.js';
 
 /**
- * Inizializza la scena con gli elementi di base: mare e isola
+ * Inizializza la scena con gli elementi di base: mare, isole e cielo
  * @param {THREE.Scene} scene - La scena Three.js
+ * @param {number} playerCount - Numero di giocatori (default: 6)
  */
-export function initScene(scene) {
+export function initScene(scene, playerCount = 6) {
     console.log('Inizializzazione degli elementi della scena...');
     
     // Crea il cielo con il nuovo shader
@@ -33,193 +35,8 @@ export function initScene(scene) {
     // Genera le nuvole iniziali
     cloudGenerator.generateClouds();
     
-    // Crea il gruppo per l'isola
-    const islandGroup = new THREE.Group();
-    
-    // Crea l'isola (ora completamente gialla)
-    const islandGeometry = new THREE.CylinderGeometry(30, 30, 3, 32);
-    const islandMaterial = new THREE.MeshPhongMaterial({ 
-        color: 0xf2d16b,
-        shininess: 0
-    });
-    const island = new THREE.Mesh(islandGeometry, islandMaterial);
-    island.position.y = 1.5;
-    island.receiveShadow = true;
-    islandGroup.add(island);
-    
-    // Funzione per calcolare l'altezza sulla superficie dell'isola
-    function getHeightAtPosition(x, z) {
-        // L'isola è un cilindro, quindi calcoliamo la distanza dal centro
-        const distanceFromCenter = Math.sqrt(x * x + z * z);
-        const islandRadius = 30;
-        const islandHeight = 3;
-        
-        if (distanceFromCenter <= islandRadius) {
-            // Siamo sull'isola, restituiamo l'altezza corretta
-            return island.position.y + islandHeight / 2;
-        }
-        return 0; // Fuori dall'isola, altezza al livello dell'acqua
-    }
-    
-    // Funzione per creare un albero in stile Minecraft
-    function createTree(x, z, type = 'oak') {
-        const treeGroup = new THREE.Group();
-        const height = getHeightAtPosition(x, z);
-        
-        // Configurazione dell'albero in base al tipo
-        const treeConfig = {
-            oak: {
-                trunkHeight: Math.floor(Math.random() * 3) + 4, // 4-6 blocchi
-                trunkColor: 0x8B4513,
-                leavesColor: 0x2d5a27,
-                crownSize: 3,
-                crownShape: 'cube'
-            },
-            pine: {
-                trunkHeight: Math.floor(Math.random() * 4) + 6, // 6-9 blocchi
-                trunkColor: 0x6B4423,
-                leavesColor: 0x1b4a1b,
-                crownSize: 4,
-                crownShape: 'pyramid'
-            }
-        };
-        
-        const config = treeConfig[type];
-        
-        // Crea il materiale per il tronco (stile Minecraft)
-        const trunkMaterial = new THREE.MeshPhongMaterial({
-            color: config.trunkColor,
-            shininess: 0,
-            flatShading: true
-        });
-        
-        // Crea il materiale per le foglie (stile Minecraft)
-        const leavesMaterial = new THREE.MeshPhongMaterial({
-            color: config.leavesColor,
-            shininess: 0,
-            transparent: true,
-            opacity: 0.95,
-            flatShading: true
-        });
-        
-        // Crea il tronco usando cubi sovrapposti
-        const trunkGeometry = new THREE.BoxGeometry(1, 1, 1);
-        for (let i = 0; i < config.trunkHeight; i++) {
-            const trunkBlock = new THREE.Mesh(trunkGeometry, trunkMaterial);
-            trunkBlock.position.set(0, i, 0);
-            trunkBlock.castShadow = true;
-            trunkBlock.receiveShadow = true;
-            treeGroup.add(trunkBlock);
-        }
-        
-        // Funzione per aggiungere un blocco foglia con variazione casuale
-        function addLeafBlock(x, y, z, probability = 1) {
-            if (Math.random() < probability) {
-                const leafBlock = new THREE.Mesh(trunkGeometry, leavesMaterial);
-                leafBlock.position.set(x, y, z);
-                leafBlock.castShadow = true;
-                treeGroup.add(leafBlock);
-            }
-        }
-        
-        // Crea la chioma in base al tipo di albero
-        const crownY = config.trunkHeight - 1;
-        
-        if (config.crownShape === 'cube') {
-            // Chioma cubica (quercia)
-            for (let y = 0; y < config.crownSize; y++) {
-                for (let x = -2; x <= 2; x++) {
-                    for (let z = -2; z <= 2; z++) {
-                        // Evita i blocchi interni per risparmiare poligoni
-                        if (Math.abs(x) === 2 || Math.abs(z) === 2 || y === 0 || y === config.crownSize - 1) {
-                            // Aggiungi variazione casuale ai bordi
-                            const distanceFromCenter = Math.sqrt(x * x + z * z);
-                            const probability = 1 - (distanceFromCenter / 3);
-                            addLeafBlock(x, crownY + y, z, probability);
-                        }
-                    }
-                }
-            }
-        } else if (config.crownShape === 'pyramid') {
-            // Chioma piramidale (pino)
-            for (let y = 0; y < config.crownSize; y++) {
-                const layerSize = config.crownSize - y;
-                for (let x = -layerSize; x <= layerSize; x++) {
-                    for (let z = -layerSize; z <= layerSize; z++) {
-                        const distanceFromCenter = Math.sqrt(x * x + z * z);
-                        if (distanceFromCenter <= layerSize) {
-                            addLeafBlock(x, crownY + y, z, 0.8);
-                        }
-                    }
-                }
-            }
-        }
-        
-        // Posiziona l'albero sulla superficie
-        treeGroup.position.set(x, height, z);
-        
-        // Aggiungi una leggera rotazione casuale per varietà
-        treeGroup.rotation.y = Math.random() * Math.PI * 2;
-        
-        return treeGroup;
-    }
-    
-    // Aggiungi alberi sul bordo dell'isola
-    for (let i = 0; i < 12; i++) {
-        const angle = (i / 12) * Math.PI * 2;
-        const radius = 28;
-        const x = Math.cos(angle) * radius;
-        const z = Math.sin(angle) * radius;
-        // Alterna tra querce e pini per varietà
-        const treeType = i % 2 === 0 ? 'oak' : 'pine';
-        const tree = createTree(x, z, treeType);
-        islandGroup.add(tree);
-    }
-    
-    // Aggiungi alcuni alberi sparsi nell'interno dell'isola
-    for (let i = 0; i < 8; i++) {
-        const angle = Math.random() * Math.PI * 2;
-        const radius = Math.random() * 20 + 5; // Tra 5 e 25 unità dal centro
-        const x = Math.cos(angle) * radius;
-        const z = Math.sin(angle) * radius;
-        const treeType = Math.random() < 0.7 ? 'oak' : 'pine';
-        const tree = createTree(x, z, treeType);
-        islandGroup.add(tree);
-    }
-    
-    // Funzione per creare una roccia
-    function createRock(x, z) {
-        // Ottieni l'altezza corretta per la posizione
-        const height = getHeightAtPosition(x, z);
-        
-        const rockGeometry = new THREE.DodecahedronGeometry(Math.random() * 1 + 0.5);
-        const rockMaterial = new THREE.MeshPhongMaterial({ color: 0x808080 });
-        const rock = new THREE.Mesh(rockGeometry, rockMaterial);
-        
-        // Posiziona la roccia sulla superficie
-        rock.position.set(x, height + rockGeometry.parameters.radius, z);
-        rock.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, Math.random() * Math.PI);
-        rock.castShadow = true;
-        rock.receiveShadow = true;
-        
-        return rock;
-    }
-    
-    // Aggiungi rocce sparse sull'isola
-    for (let i = 0; i < 15; i++) {
-        const angle = Math.random() * Math.PI * 2;
-        const radius = Math.random() * 25; // Distribuisci le rocce su tutta l'isola
-        const x = Math.cos(angle) * radius;
-        const z = Math.sin(angle) * radius;
-        const rock = createRock(x, z);
-        islandGroup.add(rock);
-    }
-    
-    // Aggiungi l'isola alla scena
-    scene.add(islandGroup);
-    
     // Crea l'acqua
-    const waterGeometry = new THREE.PlaneGeometry(1000, 1000);
+    const waterGeometry = new THREE.PlaneGeometry(2000, 2000);
     const water = new Water(waterGeometry, {
         textureWidth: 512,
         textureHeight: 512,
@@ -236,7 +53,39 @@ export function initScene(scene) {
     water.position.y = 0;
     scene.add(water);
     
-    // Crea la barca (stile Minecraft)
+    // Crea il generatore di isole
+    const islandGenerator = new IslandGenerator(scene);
+    
+    // Genera le isole in base al numero di giocatori
+    islandGenerator.generateIslandsForPlayers(playerCount);
+    
+    // Ottieni tutte le isole generate
+    const islands = islandGenerator.getAllIslands();
+    console.log(`Generate ${islands.length} isole per ${playerCount} giocatori`);
+    
+    // Crea la barca (stile Minecraft) per la prima isola
+    const boat = createBoat();
+    
+    // Posiziona la barca nell'acqua vicino alla prima isola
+    boat.position.set(32, 0.2, 0);
+    scene.add(boat);
+    console.log('Barca aggiunta alla scena con i remi');
+    
+    return { 
+        water, 
+        boat, 
+        cloudGenerator, 
+        skyShader,
+        islandGenerator,
+        islands
+    };
+}
+
+/**
+ * Crea una barca in stile Minecraft
+ * @returns {THREE.Group} - Il gruppo contenente la barca
+ */
+function createBoat() {
     const boat = new THREE.Group();
     
     // Base della barca (scafo)
@@ -308,78 +157,42 @@ export function initScene(scene) {
     rightPaddleGroup.rotation.x = Math.PI / 6;
     boat.add(rightPaddleGroup);
     
-    // Posiziona la barca nell'acqua vicino all'isola
-    boat.position.set(32, 0.2, 0); // Appena fuori dal bordo dell'isola
-    scene.add(boat);
-    console.log('Barca aggiunta alla scena con i remi');
-    
-    return { water, boat, cloudGenerator, skyShader };
+    return boat;
 }
 
 /**
- * Aggiunge una barca alla scena
+ * Crea una barca per ogni isola
  * @param {THREE.Scene} scene - La scena Three.js
+ * @param {Array} islands - Array di oggetti isola
+ * @returns {Array} - Array di barche
  */
-function addBoat(scene) {
-    const boat = new THREE.Group();
+export function createBoatsForIslands(scene, islands) {
+    const boats = [];
     
-    // Scafo
-    const hullGeometry = new THREE.BoxGeometry(6, 2, 12);
-    const hullMaterial = new THREE.MeshStandardMaterial({ 
-        color: 0x8B4513,
-        roughness: 0.7,
-        metalness: 0.1
+    islands.forEach((island, index) => {
+        const boat = createBoat();
+        
+        // Calcola la posizione della barca vicino all'isola
+        const islandPosition = island.position;
+        const boatPosition = new THREE.Vector3(
+            islandPosition.x + 32,
+            0.2,
+            islandPosition.z
+        );
+        
+        boat.position.copy(boatPosition);
+        scene.add(boat);
+        
+        boats.push({
+            boat: boat,
+            islandIndex: index,
+            position: boatPosition.clone()
+        });
+        
+        console.log(`Barca creata per l'isola ${index} a posizione ${boatPosition.x}, ${boatPosition.y}, ${boatPosition.z}`);
     });
-    const hull = new THREE.Mesh(hullGeometry, hullMaterial);
-    hull.position.y = 1;
-    hull.castShadow = true;
-    boat.add(hull);
     
-    // Prua
-    const bowGeometry = new THREE.ConeGeometry(2, 4, 4);
-    bowGeometry.rotateX(-Math.PI / 2);
-    const bowMaterial = new THREE.MeshStandardMaterial({ 
-        color: 0x8B4513,
-        roughness: 0.7,
-        metalness: 0.1
-    });
-    const bow = new THREE.Mesh(bowGeometry, bowMaterial);
-    bow.position.set(0, 1, -6);
-    bow.castShadow = true;
-    boat.add(bow);
-    
-    // Albero
-    const mastGeometry = new THREE.CylinderGeometry(0.3, 0.3, 8, 8);
-    const mastMaterial = new THREE.MeshStandardMaterial({ 
-        color: 0x8B4513,
-        roughness: 0.7,
-        metalness: 0.1
-    });
-    const mast = new THREE.Mesh(mastGeometry, mastMaterial);
-    mast.position.set(0, 6, -2);
-    mast.castShadow = true;
-    boat.add(mast);
-    
-    // Vela
-    const sailGeometry = new THREE.PlaneGeometry(5, 6);
-    const sailMaterial = new THREE.MeshStandardMaterial({ 
-        color: 0xffffff,
-        roughness: 0.5,
-        metalness: 0.0,
-        side: THREE.DoubleSide
-    });
-    const sail = new THREE.Mesh(sailGeometry, sailMaterial);
-    sail.position.set(0, 6, 0);
-    sail.rotation.y = Math.PI / 2;
-    sail.castShadow = true;
-    boat.add(sail);
-    
-    // Posiziona la barca
-    boat.position.set(-40, 2, 20);
-    boat.rotation.y = Math.PI / 4;
-    
-    scene.add(boat);
-    console.log('Barca aggiunta alla scena');
+    return boats;
 }
 
 /**

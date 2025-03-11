@@ -3,23 +3,86 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tesoro delle Isole</title>
-    <link rel="stylesheet" href="style.css">
+    <title>Battle Island Real - Gioco Multiplayer</title>
+    <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
     <div id="game-container"></div>
+    
     <div id="blocker">
         <div id="instructions">
             <h1>Tesoro delle Isole</h1>
             <p>Clicca per iniziare</p>
-            <p>WASD / Frecce = Muovi</p>
-            <p>Mouse = Guarda</p>
-            <p>Spazio = Salta</p>
-            <p>Shift = Corri</p>
-            <p>ESC = Esci</p>
+            <div class="controls">
+                <p>WASD / Frecce = Muovi</p>
+                <p>Mouse <span class="plus">+</span> Guarda</p>
+                <p>Spazio = Salta</p>
+                <p>Shift = Corri</p>
+                <p>ESC = Esci</p>
+            </div>
+            
+            <div id="team-selection">
+                <h2>Seleziona la tua squadra</h2>
+                <div class="team-buttons">
+                    <button class="team-button" data-team="0" style="background-color: #f2d16b;">Squadra 1</button>
+                    <button class="team-button" data-team="1" style="background-color: #ff6b6b;">Squadra 2</button>
+                    <button class="team-button" data-team="2" style="background-color: #6bff6b;">Squadra 3</button>
+                </div>
+                <div class="team-buttons">
+                    <button class="team-button" data-team="3" style="background-color: #6b6bff;">Squadra 4</button>
+                    <button class="team-button" data-team="4" style="background-color: #ff6bff;">Squadra 5</button>
+                    <button class="team-button" data-team="5" style="background-color: #6bffff;">Squadra 6</button>
+                </div>
+                
+                <div class="player-count">
+                    <label for="player-count">Numero di giocatori:</label>
+                    <input type="number" id="player-count" min="6" max="36" step="6" value="12">
+                </div>
+            </div>
         </div>
     </div>
-    <div class="crosshair"></div>
+    
     <script type="module" src="js/main.js"></script>
+    <script>
+        // Gestione della selezione della squadra
+        document.addEventListener('DOMContentLoaded', function() {
+            const teamButtons = document.querySelectorAll('.team-button');
+            const playerCountInput = document.getElementById('player-count');
+            
+            // Funzione per aggiornare la variabile playerTeam nel modulo main.js
+            function updatePlayerTeam(teamIndex) {
+                window.playerTeam = teamIndex;
+                
+                // Evidenzia il pulsante selezionato
+                teamButtons.forEach(button => {
+                    button.classList.remove('selected');
+                });
+                event.target.classList.add('selected');
+            }
+            
+            // Funzione per aggiornare la variabile playerCount nel modulo main.js
+            function updatePlayerCount(count) {
+                window.playerCount = count;
+            }
+            
+            // Aggiungi event listener ai pulsanti delle squadre
+            teamButtons.forEach(button => {
+                button.addEventListener('click', function(event) {
+                    const teamIndex = parseInt(event.target.dataset.team);
+                    updatePlayerTeam(teamIndex);
+                });
+            });
+            
+            // Aggiungi event listener all'input del numero di giocatori
+            playerCountInput.addEventListener('change', function(event) {
+                const count = parseInt(event.target.value);
+                updatePlayerCount(count);
+            });
+            
+            // Imposta i valori predefiniti
+            updatePlayerTeam(0);
+            updatePlayerCount(12);
+        });
+    </script>
 </body>
 </html> 

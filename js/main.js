@@ -1,7 +1,7 @@
 // Importa le librerie Three.js
 import * as THREE from 'three';
 import { PointerLockControls } from 'three/examples/jsm/controls/PointerLockControls.js';
-import { initScene } from './scene.js';
+import { initScene, createBoatsForIslands } from './scene.js';
 import { Player } from './entities/player.js';
 import { initPlayer } from './player.js';
 import { BoatController } from './controllers/BoatController.js';
@@ -19,7 +19,12 @@ let player;
 let water;
 let cloudGenerator;
 let lastTime = 0;
-let boatController;
+let boatControllers = [];
+let islandGenerator;
+let islands = [];
+let boats = [];
+let playerCount = 12; // Numero di giocatori (modificabile)
+let playerTeam = 0; // Squadra del giocatore corrente (modificabile)
 
 // Inizializzazione della scena
 function init() {
@@ -59,23 +64,84 @@ function init() {
     scene.add(sunLight);
     
     // Inizializza la scena con gli elementi
-    const sceneElements = initScene(scene);
+    const sceneElements = initScene(scene, playerCount);
     water = sceneElements.water;
     const boat = sceneElements.boat;
     cloudGenerator = sceneElements.cloudGenerator;
+    islandGenerator = sceneElements.islandGenerator;
+    islands = sceneElements.islands;
     console.log('Elementi della scena inizializzati');
+    
+    // Crea barche per tutte le isole
+    boats = createBoatsForIslands(scene, islands);
     
     // Inizializza il player e passa la barca
     player = initPlayer(camera);
     player.setBoat(boat);
     console.log('Player inizializzato e barca assegnata');
     
-    // Inizializza il controller della barca
-    boatController = new BoatController(boat, camera, scene, controls);
-    console.log('Controller della barca inizializzato');
+    // Posiziona il giocatore sull'isola della sua squadra
+    if (islands.length > 0 && playerTeam < islands.length) {
+        const teamIsland = islands[playerTeam];
+        const spawnPosition = new THREE.Vector3(
+            teamIsland.position.x,
+            7, // Altezza del giocatore
+            teamIsland.position.z + 10 // Leggermente spostato dal centro
+        );
+        camera.position.copy(spawnPosition);
+        console.log(`Giocatore posizionato sull'isola della squadra ${playerTeam}`);
+    }
+    
+    // Inizializza i controller delle barche
+    boats.forEach((boatInfo, index) => {
+        const boatController = new BoatController(boatInfo.boat, camera, scene, controls);
+        boatControllers.push(boatController);
+        console.log(`Controller della barca ${index} inizializzato`);
+    });
     
     // Gestisci il ridimensionamento della finestra
     window.addEventListener('resize', onWindowResize, false);
+    
+    // Aggiungi un'interfaccia per visualizzare informazioni sulla squadra
+    createTeamUI();
+}
+
+// Crea un'interfaccia per visualizzare informazioni sulla squadra
+function createTeamUI() {
+    const teamInfo = document.createElement('div');
+    teamInfo.style.position = 'absolute';
+    teamInfo.style.top = '10px';
+    teamInfo.style.left = '10px';
+    teamInfo.style.color = 'white';
+    teamInfo.style.fontFamily = 'Arial, sans-serif';
+    teamInfo.style.fontSize = '16px';
+    teamInfo.style.textShadow = '1px 1px 2px black';
+    teamInfo.style.padding = '10px';
+    teamInfo.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+    teamInfo.style.borderRadius = '5px';
+    
+    // Converti il colore esadecimale in stringa CSS
+    const teamColors = [
+        '#f2d16b', // Giallo
+        '#ff6b6b', // Rosso
+        '#6bff6b', // Verde
+        '#6b6bff', // Blu
+        '#ff6bff', // Magenta
+        '#6bffff'  // Ciano
+    ];
+    
+    const teamColor = teamColors[playerTeam % teamColors.length];
+    
+    teamInfo.innerHTML = `
+        <div style="display: flex; align-items: center;">
+            <div style="width: 20px; height: 20px; background-color: ${teamColor}; margin-right: 10px; border-radius: 50%;"></div>
+            <span>Squadra ${playerTeam + 1}</span>
+        </div>
+        <div style="margin-top: 5px;">Giocatori: ${Math.min(6, playerCount - playerTeam * 6)}</div>
+        <div style="margin-top: 5px;">Isole totali: ${islands.length}</div>
+    `;
+    
+    container.appendChild(teamInfo);
 }
 
 // Gestione del ridimensionamento della finestra
@@ -125,13 +191,24 @@ function animate(currentTime) {
     const deltaTime = currentTime - lastTime;
     lastTime = currentTime;
     
+    // Verifica se il giocatore è in una barca
+    let isInAnyBoat = false;
+    for (const controller of boatControllers) {
+        if (controller.isPlayerInBoat) {
+            isInAnyBoat = true;
+            break;
+        }
+    }
+    
     // Aggiorna la logica del giocatore solo se non è nella barca
-    if (!boatController.isPlayerInBoat) {
+    if (!isInAnyBoat) {
         player.update();
     }
     
-    // Aggiorna il controller della barca
-    boatController.update();
+    // Aggiorna tutti i controller delle barche
+    for (const controller of boatControllers) {
+        controller.update();
+    }
     
     // Aggiorna l'acqua
     if (water) {
