@@ -67,7 +67,7 @@ export function initScene(scene, playerCount = 6) {
     const boat = createBoat();
     
     // Posiziona la barca nell'acqua vicino alla prima isola
-    boat.position.set(32, 1.5, 0);
+    boat.position.set(32, 0, 0);
     scene.add(boat);
     console.log('Barca aggiunta alla scena con i remi');
     
@@ -95,32 +95,32 @@ function createBoat() {
         shininess: 5
     });
     const hull = new THREE.Mesh(hullGeometry, woodMaterial);
-    hull.position.y = 2;
+    hull.position.y = 0.5;
     hull.castShadow = true;
     boat.add(hull);
     
     // Lati della barca (stile Minecraft)
     const sideGeometry = new THREE.BoxGeometry(0.4, 1, 6);
     const leftSide = new THREE.Mesh(sideGeometry, woodMaterial);
-    leftSide.position.set(-1.2, 2.5, 0);
+    leftSide.position.set(-1.2, 1.0, 0);
     leftSide.castShadow = true;
     boat.add(leftSide);
     
     const rightSide = new THREE.Mesh(sideGeometry, woodMaterial);
-    rightSide.position.set(1.2, 2.5, 0);
+    rightSide.position.set(1.2, 1.0, 0);
     rightSide.castShadow = true;
     boat.add(rightSide);
     
     // Parte frontale e posteriore inclinate
     const frontGeometry = new THREE.BoxGeometry(3, 1, 1);
     const front = new THREE.Mesh(frontGeometry, woodMaterial);
-    front.position.set(0, 2, -2.5);
+    front.position.set(0, 0.5, -2.5);
     front.rotation.x = Math.PI / 6;
     front.castShadow = true;
     boat.add(front);
     
     const back = new THREE.Mesh(frontGeometry, woodMaterial);
-    back.position.set(0, 2, 2.5);
+    back.position.set(0, 0.5, 2.5);
     back.rotation.x = -Math.PI / 6;
     back.castShadow = true;
     boat.add(back);
@@ -141,7 +141,7 @@ function createBoat() {
     leftHandle.position.y = 0.8;
     leftPaddleGroup.add(leftPaddle);
     leftPaddleGroup.add(leftHandle);
-    leftPaddleGroup.position.set(-1.5, 2.3, 0);
+    leftPaddleGroup.position.set(-1.5, 0.8, 0);
     leftPaddleGroup.rotation.x = Math.PI / 6;
     boat.add(leftPaddleGroup);
     
@@ -153,7 +153,7 @@ function createBoat() {
     rightHandle.position.y = 0.8;
     rightPaddleGroup.add(rightPaddle);
     rightPaddleGroup.add(rightHandle);
-    rightPaddleGroup.position.set(1.5, 2.3, 0);
+    rightPaddleGroup.position.set(1.5, 0.8, 0);
     rightPaddleGroup.rotation.x = Math.PI / 6;
     boat.add(rightPaddleGroup);
     
@@ -176,7 +176,7 @@ export function createBoatsForIslands(scene, islands) {
         const islandPosition = island.position;
         const boatPosition = new THREE.Vector3(
             islandPosition.x + 32,
-            1.5,
+            0,
             islandPosition.z
         );
         
