@@ -116,8 +116,8 @@ export class BoatController {
     }
     
     onClick() {
-        if (this.isTransitioning || !this.controls.isLocked) {
-            console.log('Click ignorato: transizione in corso o controlli non bloccati');
+        if (this.isTransitioning) {
+            console.log('Click ignorato: transizione in corso');
             return;
         }
         
